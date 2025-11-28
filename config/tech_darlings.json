@@ -1,0 +1,38 @@
+[
+    {
+        "Ticker": "AAPL",
+        "Company Name": "Apple Inc."
+    },
+    {
+        "Ticker": "NVDA",
+        "Company Name": "NVIDIA Corporation"
+    },
+    {
+        "Ticker": "IBM",
+        "Company Name": "International Business Machines"
+    },
+    {
+        "Ticker": "AMZN",
+        "Company Name": "Amazon.com Inc."
+    },
+    {
+        "Ticker": "MSFT",
+        "Company Name": "Microsoft Corporation"
+    },
+    {
+        "Ticker": "PLTR",
+        "Company Name": "Palantir Technologies Inc."
+    },
+    {
+        "Ticker": "XRX",
+        "Company Name": "Xerox Holdings Corporation"
+    },
+    {
+        "Ticker": "GOOGL",
+        "Company Name": "Alphabet Inc."
+    },
+    {
+        "Ticker": "META",
+        "Company Name": "Meta Platforms Inc."
+    }
+]

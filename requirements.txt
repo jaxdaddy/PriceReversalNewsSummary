@@ -1,0 +1,7 @@
+pandas
+openpyxl
+python-dotenv
+newsapi-python
+pypdf
+python-multipart
+google-generativeai

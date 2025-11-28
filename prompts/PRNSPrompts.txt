@@ -1,0 +1,17 @@
+
+1. Market-Wide Reversal Analysis Prompt
+Using the list of companies and reversal metrics in the uploaded spreadsheet, analyze which sectors or industries are experiencing the strongest downward reversal pressure. Cross-reference each company with its most recent major news events. Identify whether the reversals appear to be driven primarily by macroeconomic conditions, sector-specific risks, or company-specific news catalysts.
+
+2. Company-Level Risk & Catalyst Prompt
+For each company listed in the uploaded reversal dataset, summarize the most recent and relevant news events from trusted financial sources. Evaluate whether each piece of news increases or decreases the likelihood that the price reversal will continue. Provide a risk score and explain the news-signal alignment with the quantitative reversal indicators.
+
+3. Expected Move Validation Prompt
+Compare the “Expected Magnitude” and “Remaining Expected Magnitude” in the uploaded data with major news flow for each company. Determine whether current news supports the projected continuation of the reversal or contradicts it. Highlight any stocks where news sentiment suggests the model’s reversal duration or magnitude may be materially inaccurate.
+
+4. Trading Opportunity Identification Prompt
+Using the reversal signals, expected magnitudes, and remaining trading days in the uploaded spreadsheet, identify the top 10 highest-potential trading setups. Enhance the analysis with relevant company news from the past 7 days. For each ticker, explain how recent news strengthens or weakens the reversal signal, and provide a summarized trade thesis.
+
+5. Outlier & Anomaly Detection Prompt
+Review the reversal data for statistical outliers—such as unusually large expected magnitudes, long expected durations, or significantly negative HR1 values. For each outlier company, examine recent news and determine whether the outlier values indicate a mispricing opportunity, model anomaly, or news-driven disruption. Provide an explanation for each anomaly.
+
+

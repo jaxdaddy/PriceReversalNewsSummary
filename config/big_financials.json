@@ -1,0 +1,22 @@
+[
+    {
+        "Ticker": "JPM",
+        "Company Name": "JPMorgan Chase & Co."
+    },
+    {
+        "Ticker": "BAC",
+        "Company Name": "Bank of America Corp"
+    },
+    {
+        "Ticker": "WFC",
+        "Company Name": "Wells Fargo & Company"
+    },
+    {
+        "Ticker": "C",
+        "Company Name": "Citigroup Inc."
+    },
+    {
+        "Ticker": "GS",
+        "Company Name": "Goldman Sachs Group Inc"
+    }
+]
