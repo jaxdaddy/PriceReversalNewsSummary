@@ -1,0 +1,12 @@
+```json
+[
+  {
+    "Symbol": "AMGN",
+    "SearchQuery": "Amgen"
+  },
+  {
+    "Symbol": "AXP",
+    "SearchQuery": "American Express"
+  }
+]
+```

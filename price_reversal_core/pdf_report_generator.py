@@ -28,7 +28,7 @@ def extract_pdf_text(pdf_path: str) -> str:
 
 def markdown_to_paragraphs(markdown_text: str, styles: dict) -> list:
     """
-    Converts a simple markdown text to a list of ReportLab Paragraphs.
+    Converts a simple markdown text to a list of ReportLab Flowables.
     Handles headings, bold, italic, lists, and basic tables as formatted ReportLab tables.
     """
     story = []
@@ -36,57 +36,80 @@ def markdown_to_paragraphs(markdown_text: str, styles: dict) -> list:
     in_table_block = False
     table_lines = []
 
-    for line in lines:
-        # Detect start/continuation of table block
-        # A table line typically starts and ends with '|' and contains pipes in between
-        if line.strip().startswith('|') and '|' in line[1:-1]: # Simplified table row detection
+    for line_idx, line in enumerate(lines):
+        # Detect markdown table lines (starts with '|' and contains other '|' or is a separator)
+        is_table_related_line = line.strip().startswith('|')
+        
+        if is_table_related_line:
             table_lines.append(line)
             in_table_block = True
             continue
-        elif in_table_block: # End of table block or non-table line
+        
+        if in_table_block and not is_table_related_line:
+            # End of table block, process collected table_lines
             if table_lines:
-                # Create a simple table from parsed lines
-                table_data = []
-                for t_line in table_lines:
-                    # Split by '|' and clean up cells, then remove empty strings
-                    # Wrap each cell content in a Paragraph for word wrapping
-                    table_data.append([Paragraph(cell, styles['Normal']) for cell in t_line.split('|') if cell])
+                processed_table_data = []
+                # First, determine if there's a separator line and process header/body separately
+                header_row = []
+                separator_row = []
+                body_rows = []
+
+                # Find separator line (e.g., |---|---|) 
+                separator_idx = -1
+                for i, t_line in enumerate(table_lines):
+                    # Check for a line consisting primarily of hyphens and pipes
+                    if re.match(r'^\|[\s\- |:]*$', t_line.strip()):
+                        separator_idx = i
+                        break
                 
-                # Basic table style
-                table_style = TableStyle([
-                    ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
-                    ('TEXTCOLOR', (0,0), (-1,0), colors.black),
-                    ('ALIGN', (0,0), (-1,-1), 'LEFT'),
-                    ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-                    ('BOTTOMPADDING', (0,0), (-1,0), 6),
-                    ('BACKGROUND', (0,1), (-1,-1), colors.white),
-                    ('GRID', (0,0), (-1,-1), 1, colors.black),
-                    ('VALIGN', (0,0), (-1,-1), 'TOP'),
-                    ('WORDWRAP', (0,0), (-1,-1), True), # Enable word wrapping
-                ])
+                if separator_idx != -1:
+                    header_row_str = table_lines[0]
+                    body_lines_str = table_lines[separator_idx + 1:]
+                    
+                    # Process header
+                    header_cells = [cell.strip() for cell in header_row_str.split('|') if cell.strip()]
+                    header_row = [Paragraph(f"<b>{cell}</b>", styles['Normal']) for cell in header_cells]
+                    processed_table_data.append(header_row)
+
+                    # Process body rows
+                    for b_line_str in body_lines_str:
+                        body_cells = [cell.strip() for cell in b_line_str.split('|') if cell.strip()]
+                        processed_table_data.append([Paragraph(cell, styles['Normal']) for cell in body_cells])
+                else: # No explicit separator, treat all as body
+                    for t_line in table_lines:
+                        row_cells = [cell.strip() for cell in t_line.split('|')]
+                        processed_table_data.append([Paragraph(cell, styles['Normal']) for cell in row_cells if cell])
                 
-                # Check if the table has at least a header and a separator
-                if len(table_data) > 1 and re.match(r'[\s\-:]+', table_data[1][0].text if table_data[1] and table_data[1][0] else ''):
-                    # It's likely a markdown table with a separator line
-                    # Remove separator line for ReportLab Table
-                    table_data.pop(1)
-                
-                # Ensure all rows have the same number of columns for ReportLab Table
-                max_cols = max(len(row) for row in table_data) if table_data else 0
-                max_cols = max(1, max_cols) # Ensure max_cols is at least 1 to prevent division by zero
-                table_data = [row + [Paragraph('', styles['Normal'])] * (max_cols - len(row)) for row in table_data]
-                
-                # Calculate column widths based on page size
-                page_width = letter[0]
-                left_right_margin = 0.5 * inch # Assuming 0.5 inch margin on each side
-                available_width = page_width - (2 * left_right_margin)
-                
-                col_widths = [available_width / max_cols] * max_cols if max_cols > 0 else [None]
-                
-                t = Table(table_data, colWidths=col_widths)
-                t.setStyle(table_style)
-                story.append(t)
-                story.append(Spacer(1, 12)) # Add spacing after table
+                if processed_table_data:
+                    # Ensure all rows have the same number of columns for ReportLab Table
+                    max_cols = max(len(row) for row in processed_table_data) if processed_table_data else 0
+                    max_cols = max(1, max_cols) # Ensure max_cols is at least 1
+                    processed_table_data = [row + [Paragraph('', styles['Normal'])] * (max_cols - len(row)) for row in processed_table_data]
+                    
+                    # Calculate column widths based on page size
+                    page_width = letter[0]
+                    left_right_margin = 0.5 * inch # Assuming 0.5 inch margin on each side
+                    available_width = page_width - (2 * left_right_margin)
+                    
+                    col_widths = [available_width / max_cols] * max_cols if max_cols > 0 else [None]
+                    
+                    table_style = TableStyle([
+                        ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                        ('TEXTCOLOR', (0,0), (-1,0), colors.black),
+                        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+                        ('FONTNAME', (0,0), (-1,0), 'Helvetica'), # Use Helvetica for general text
+                        ('BOTTOMPADDING', (0,0), (-1,0), 6),
+                        ('BACKGROUND', (0,1), (-1,-1), colors.white),
+                        ('GRID', (0,0), (-1,-1), 1, colors.black),
+                        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                        ('WORDWRAP', (0,0), (-1,-1), True), # Enable word wrapping
+                        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'), # Header text is bold
+                    ])
+                    
+                    t = Table(processed_table_data, colWidths=col_widths)
+                    t.setStyle(table_style)
+                    story.append(t)
+                    story.append(Spacer(1, 12)) # Add spacing after table
                 
                 table_lines = [] # Clear for next table
             in_table_block = False
@@ -114,41 +137,64 @@ def markdown_to_paragraphs(markdown_text: str, styles: dict) -> list:
     
     # Process any remaining table lines if file ends with a table
     if in_table_block and table_lines:
-        story.append(Paragraph("", styles['Normal'])) # Add an empty paragraph for spacing before table
-        table_data = []
-        for t_line in table_lines:
-            table_data.append([Paragraph(cell, styles['Normal']) for cell in t_line.split('|') if cell.strip()])
-            
-        table_style = TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
-            ('TEXTCOLOR', (0,0), (-1,0), colors.black),
-            ('ALIGN', (0,0), (-1,-1), 'LEFT'),
-            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-            ('BOTTOMPADDING', (0,0), (-1,0), 6),
-            ('BACKGROUND', (0,1), (-1,-1), colors.white),
-            ('GRID', (0,0), (-1,-1), 1, colors.black),
-            ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('WORDWRAP', (0,0), (-1,-1), True), # Enable word wrapping
-        ])
-        
-        if len(table_data) > 1 and re.match(r'[\s\-:]+', table_data[1][0].text if table_data[1] and table_data[1][0] else ''):
-            table_data.pop(1)
-            
-        # Ensure all rows have the same number of columns for ReportLab Table
-        max_cols = max(len(row) for row in table_data) if table_data else 0
-        max_cols = max(1, max_cols) # Ensure max_cols is at least 1 to prevent division by zero
-        table_data = [row + [Paragraph('', styles['Normal'])] * (max_cols - len(row)) for row in table_data]
+        processed_table_data = []
+        # First, determine if there's a separator line and process header/body separately
+        header_row = []
+        separator_row = []
+        body_rows = []
 
-        page_width = letter[0]
-        left_right_margin = 0.5 * inch
-        available_width = page_width - (2 * left_right_margin)
+        # Find separator line (e.g., |---|---|) 
+        separator_idx = -1
+        for i, t_line in enumerate(table_lines):
+            if re.match(r'^\|[\s\- |:]*$', t_line.strip()):
+                separator_idx = i
+                break
         
-        col_widths = [available_width / max_cols] * max_cols if max_cols > 0 else [None]
+        if separator_idx != -1:
+            header_row_str = table_lines[0]
+            body_lines_str = table_lines[separator_idx + 1:]
+            
+            # Process header
+            header_cells = [cell.strip() for cell in header_row_str.split('|') if cell.strip()]
+            header_row = [Paragraph(f"<b>{cell}</b>", styles['Normal']) for cell in header_cells]
+            processed_table_data.append(header_row)
 
-        t = Table(table_data, colWidths=col_widths)
-        t.setStyle(table_style)
-        story.append(t)
-        story.append(Spacer(1, 12)) # Add spacing after table
+            # Process body rows
+            for b_line_str in body_lines_str:
+                body_cells = [cell.strip() for cell in b_line_str.split('|') if cell.strip()]
+                processed_table_data.append([Paragraph(cell, styles['Normal']) for cell in body_cells])
+        else: # No explicit separator, treat all as body
+            for t_line in table_lines:
+                row_cells = [cell.strip() for cell in t_line.split('|')]
+                processed_table_data.append([Paragraph(cell, styles['Normal']) for cell in row_cells if cell])
+        
+        if processed_table_data:
+            max_cols = max(len(row) for row in processed_table_data) if processed_table_data else 0
+            max_cols = max(1, max_cols)
+            processed_table_data = [row + [Paragraph('', styles['Normal'])] * (max_cols - len(row)) for row in processed_table_data]
+
+            page_width = letter[0]
+            left_right_margin = 0.5 * inch
+            available_width = page_width - (2 * left_right_margin)
+            col_widths = [available_width / max_cols] * max_cols if max_cols > 0 else [None]
+
+            table_style = TableStyle([
+                ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                ('TEXTCOLOR', (0,0), (-1,0), colors.black),
+                ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+                ('FONTNAME', (0,0), (-1,0), 'Helvetica'), # Use Helvetica for general text
+                ('BOTTOMPADDING', (0,0), (-1,0), 6),
+                ('BACKGROUND', (0,1), (-1,-1), colors.white),
+                ('GRID', (0,0), (-1,-1), 1, colors.black),
+                ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                ('WORDWRAP', (0,0), (-1,-1), True), # Enable word wrapping
+                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'), # Header text is bold
+            ])
+                
+            t = Table(processed_table_data, colWidths=col_widths)
+            t.setStyle(table_style)
+            story.append(t)
+            story.append(Spacer(1, 12)) # Add spacing after table
             
     return story
 

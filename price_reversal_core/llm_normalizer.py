@@ -36,6 +36,11 @@ def normalize_company_names(tickers_data: List[Dict]) -> List[Dict]:
     
     try:
         response = model.generate_content(prompt)
+        
+        # Write response to file for debugging
+        with open("gemini_response.txt", "w") as f:
+            f.write(response.text)
+            
         # Basic cleanup to ensure JSON parsing
         text = response.text.replace("```json", "").replace("```", "").strip()
         normalized_data = json.loads(text)

@@ -3,6 +3,8 @@ import argparse
 import os
 import uuid
 import sys
+import glob
+import shutil
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -60,17 +62,48 @@ def run_pipeline(mode: str, file_path: str, limit_companies: int = None):
             
         print(f"Pipeline completed successfully. Report generated at: {report_path}")
         
+        return True # Indicate success
+        
     except Exception as e:
         print(f"Pipeline failed: {e}")
+        return False # Indicate failure
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run the Price Reversal News Summary pipeline.")
     parser.add_argument("mode", type=str, help="The analysis mode (e.g., 'default').")
-    parser.add_argument("file_path", type=str, help="The path to the Excel file.")
+    parser.add_argument("file_path", type=str, nargs='?', default=None, help="The path to the Excel file. If not provided, the newest .xlsx in 'files/uploads' will be used.")
     parser.add_argument("--limit-companies", type=int, default=None, help="Limit the number of companies to process.")
     
     args = parser.parse_args()
     
-    run_pipeline(args.mode, args.file_path, limit_companies=args.limit_companies)
+    target_file_path = args.file_path
+    
+    if target_file_path is None:
+        uploads_dir = "files/uploads"
+        xlsx_files = glob.glob(os.path.join(uploads_dir, "*.xlsx"))
+        
+        if not xlsx_files:
+            print(f"Error: No .xlsx files found in '{uploads_dir}'. Please provide a file path or ensure files exist.")
+            sys.exit(1)
+            
+        # Sort by modification time (newest first)
+        target_file_path = max(xlsx_files, key=os.path.getmtime)
+        print(f"No file_path provided. Automatically selected newest file: '{target_file_path}'")
+        
+    # Run the pipeline
+    success = run_pipeline(args.mode, target_file_path, limit_companies=args.limit_companies)
+    
+    if success:
+        # Move processed file to 'completed' subdirectory
+        uploads_dir = "files/uploads"
+        completed_dir = os.path.join(uploads_dir, "completed")
+        os.makedirs(completed_dir, exist_ok=True)
+        
+        try:
+            shutil.move(target_file_path, completed_dir)
+            print(f"Successfully moved '{target_file_path}' to '{completed_dir}'")
+        except Exception as e:
+            print(f"Error moving file '{target_file_path}' to '{completed_dir}': {e}")
+
 
 

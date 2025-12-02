@@ -5,6 +5,7 @@ This project automates the analysis of stock data for price reversal opportuniti
 ## Features
 
 -   **Excel Data Ingestion**: Loads stock data from an Excel spreadsheet.
+-   **Automated File Processing**: Automatically detects and processes the newest `.xlsx` file in the `files/uploads/` directory, moving it to a `files/uploads/completed/` subdirectory upon successful completion.
 -   **Subset Selection**: Filters and selects relevant stock entries based on criteria (e.g., latest reversal dates).
 -   **LLM Normalization**: Uses Google Gemini to normalize company names for more accurate news fetching.
 -   **News Scraping**: Fetches news articles related to the selected companies using the NewsAPI.
@@ -44,18 +45,23 @@ This project automates the analysis of stock data for price reversal opportuniti
 The pipeline is executed via a command-line interface.
 
 ```bash
-python3 run_pipeline.py <mode> <file_path> [--limit-companies <number>]
+python3 run_pipeline.py <mode> [file_path] [--limit-companies <number>]
 ```
 
 **Arguments**:
 
 -   `<mode>`: The analysis mode (e.g., `default`).
--   `<file_path>`: The path to the Excel file containing stock data (e.g., `files/uploads/SP500_2025-07-18.xlsx`).
+-   `[file_path]` (Optional): The path to the Excel file containing stock data. If not provided, the newest `.xlsx` file in the `files/uploads/` directory will be automatically detected and used.
 -   `--limit-companies <number>` (Optional): Limits the number of companies processed. Useful for testing with a smaller dataset.
 
-**Example**:
+**Examples**:
 
-To run the pipeline in `default` mode with the provided sample data:
+To run the pipeline in `default` mode, automatically detecting the newest Excel file:
+```bash
+python3 run_pipeline.py default
+```
+
+To run the pipeline for a specific Excel file:
 ```bash
 python3 run_pipeline.py default files/uploads/SP500_2025-07-18.xlsx
 ```
@@ -64,7 +70,7 @@ To run in debug mode (processing only the top 2 companies as defined in `.env`):
 1.  Set `DEBUG_MODE=True` in your `.env` file.
 2.  Run the pipeline:
     ```bash
-    python3 run_pipeline.py default files/uploads/SP500_2025-07-18.xlsx
+    python3 run_pipeline.py default
     ```
     (The `--limit-companies` argument will be overridden by `DEBUG_MODE` if set to `True`.)
 
