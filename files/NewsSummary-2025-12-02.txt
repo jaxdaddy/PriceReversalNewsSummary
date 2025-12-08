@@ -2,26 +2,50 @@ News Summary generated on 2025-12-02
 ==================================================
 
 
-## News for AMGN (Amgen)
-- **Is Amgen Stock Underperforming the Nasdaq?** (Barchart.com) - 2025-11-25
-  https://www.barchart.com/story/news/36304645/is-amgen-stock-underperforming-the-nasdaq
-- **Jim Cramer Says He is “Particularly Fond” of Johnson & Johnson** (Yahoo Entertainment) - 2025-11-29
-  https://finance.yahoo.com/news/jim-cramer-says-particularly-fond-182858806.html
-- **AI Is Rewriting How Pharma Engages Patients And Doctors** (Forbes) - 2025-11-25
-  https://www.forbes.com/sites/chasefeiger/2025/11/25/ai-is-rewriting-how-pharma-engages-patients-and-doctors/
-- **Is Pfizer Stock Underperforming the Dow?** (Barchart.com) - 2025-11-28
-  https://www.barchart.com/story/news/36352883/is-pfizer-stock-underperforming-the-dow
-- **Is Bristol-Myers Stock Underperforming the S&P 500?** (Barchart.com) - 2025-11-28
-  https://www.barchart.com/story/news/36354017/is-bristol-myers-stock-underperforming-the-s-p-500
+## News for CVX (Chevron)
+- **Bear of the Day: Chevron (CVX)** (Yahoo Entertainment) - 2025-11-26
+  https://finance.yahoo.com/news/bear-day-chevron-cvx-110900498.html
+- **3 Highest-Yielding Dividend Aristocrats to Buy Today** (Barchart.com) - 2025-11-26
+  https://www.barchart.com/story/news/36326605/3-highest-yielding-dividend-aristocrats-to-buy-today
+- **Sea drones halt operations at major Russian oil terminal** (Yahoo Entertainment) - 2025-11-29
+  https://www.yahoo.com/news/videos/sea-drones-halt-operations-major-164805508.html
+- **Is Chevron Corporation Stock Underperforming the S&P 500?** (Biztoc.com) - 2025-11-28
+  https://biztoc.com/x/9272bdac6bc7b4a6
+- **TotalEnergies Sells 40% Stake In Nigeria Offshore Blocks To Chevron** (Biztoc.com) - 2025-12-01
+  https://biztoc.com/x/cf3847ffa7d440c8
 
-## News for AXP (American Express)
-- **The Best Black Friday Ninja Deals of 2025: Slushi, Crispi, more** (Wired) - 2025-11-28
-  https://www.wired.com/story/black-friday-ninja-deals-2025/
-- **Michel Martin reflects on Thanksgiving. And, revisit Susan Stamberg's cranberry relish** (NPR) - 2025-11-27
-  https://www.npr.org/2025/11/27/g-s1-99270/up-first-newsletter-thanksgiving-cranberry-relish-tradition
-- **The new reality of study abroad: Higher costs, more politics, fewer Aperol spritzes** (Business Insider) - 2025-11-26
-  https://www.businessinsider.com/american-college-students-study-abroad-struggle-tuition-prices-trump-travel-2025-11
-- **New benefits, more value: Why I’m more excited than ever to be an Amex Platinum Card member** (The Points Guy) - 2025-11-25
-  https://thepointsguy.com/credit-cards/amex-platinum-new-benefits/
-- **Tesla celebrated a coming FSD win in Europe — then a regulator said not so fast** (Business Insider) - 2025-11-25
-  https://www.businessinsider.com/tesla-fsd-approval-europe-not-confirmed-2025-11
+## News for IBM (IBM)
+- **Micron to invest $9.6 billion in Japan to build AI memory chip plant, Nikkei reports** (Yahoo Entertainment) - 2025-11-29
+  https://finance.yahoo.com/news/micron-invest-9-6-billion-075214757.html
+- **Tech analyst Dan Ives flags 10 stocks to own, insists there's no AI bubble** (Yahoo Entertainment) - 2025-11-26
+  https://finance.yahoo.com/news/tech-analyst-dan-ives-flags-10-stocks-to-own-insists-theres-no-ai-bubble-180237596.html
+- **He predicted an automation crisis years ago. Now, Andrew Yang says AI may wipe out 40 million jobs over the next decade.** (Business Insider) - 2025-12-01
+  https://www.businessinsider.com/andrew-yang-ai-may-wipe-out-40-million-us-jobs-2025-12
+- **AI is great for a lot of things, but you shouldn’t trust it when doing your Black Friday shopping. Here's why and who you should really trust to point you in the right direction** (Android Central) - 2025-11-26
+  https://www.androidcentral.com/apps-software/ai/why-you-shouldnt-trust-ai-when-doing-your-black-friday-shopping
+- **Trump Orders Genesis Mission to Advance AI Breakthroughs** (Scientific American) - 2025-11-25
+  https://www.scientificamerican.com/article/trump-orders-genesis-mission-to-advance-ai-breakthroughs/
+
+## News for SHW (Sherwin-Williams)
+- **Sherwin-Williams Stock: Is SHW Underperforming the Basic Materials Sector?** (Barchart.com) - 2025-11-25
+  https://www.barchart.com/story/news/36306183/sherwin-williams-stock-is-shw-underperforming-the-basic-materials-sector
+- **How Is Linde’s Stock Performance Compared to Other Material Stocks?** (Barchart.com) - 2025-11-26
+  https://www.barchart.com/story/news/36320833/how-is-lindes-stock-performance-compared-to-other-material-stocks
+- **3 Buy-Rated Dividend Aristocrats Easily Beating Inflation** (Barchart.com) - 2025-11-27
+  https://www.barchart.com/story/news/36345415/3-buy-rated-dividend-aristocrats-easily-beating-inflation
+- **If You Invested $100 In Sherwin-Williams Stock 10 Years Ago, You Would Have This Much Today** (Biztoc.com) - 2025-11-28
+  https://biztoc.com/x/a904cff9e77b59f0
+- **Sherwin-Williams Stock: Is SHW Underperforming the Basic Materials Sector?** (Biztoc.com) - 2025-11-25
+  https://biztoc.com/x/dff9e6c43d4f0f90
+
+## News for NVDA (Nvidia)
+- **WIRED Roundup: Gemini 3 Release, Nvidia Earnings, Epstein Files Fallout** (Wired) - 2025-11-25
+  https://www.wired.com/story/uncanny-valley-podcast-wired-roundup-gemini-3-release-nvidia-earnings-epstein-files-fallout/
+- **Nvidia just made a $2 billion investment in Synopsys, adding to its thick web of AI deals** (Business Insider) - 2025-12-01
+  https://www.businessinsider.com/nvidia-synopsys-invests-2-billion-ai-deal-2025-12
+- **Nvidia says it's 'delighted by Google's success' — but 'Nvidia is a generation ahead of the industry'** (Business Insider) - 2025-11-25
+  https://www.businessinsider.com/nvidia-generation-ahead-google-chips-2025-11
+- **Nvidia CEO told employees to use AI for 'every task that is possible' and says there will still be plenty of jobs** (Business Insider) - 2025-11-25
+  https://www.businessinsider.com/nvidia-ceo-employees-use-ai-every-task-possible-2025-11
+- **'Big Short' investor Michael Burry says Nvidia's memo was 'disappointing' — and he's betting against it and Palantir** (Business Insider) - 2025-11-26
+  https://www.businessinsider.com/big-short-michael-burry-substack-nvidia-memo-depreciation-ai-bubble-2025-11

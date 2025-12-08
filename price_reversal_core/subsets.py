@@ -38,6 +38,7 @@ def get_subset(df: pd.DataFrame, mode: str = "default", limit_companies: int = N
         'Symbol', 
         'Company Name', 
         'Reversal Date', 
+        'Direction',
         'Reversal Price', 
         'HR1 Value', 
         'Last Close Price'

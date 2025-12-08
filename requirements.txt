@@ -5,3 +5,6 @@ newsapi-python
 pypdf
 python-multipart
 google-generativeai
+textstat
+scikit-learn
+nltk

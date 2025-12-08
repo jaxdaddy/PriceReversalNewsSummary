@@ -5,6 +5,7 @@ import uuid
 import sys
 import glob
 import shutil
+from datetime import datetime # Import datetime
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -12,6 +13,9 @@ load_dotenv()
 
 # Add project root to path
 sys.path.append(os.getcwd())
+
+# Import database manager
+from price_reversal_core.database_manager import initialize_database, insert_metrics_record
 
 def run_pipeline(mode: str, file_path: str, limit_companies: int = None):
     """
@@ -44,12 +48,15 @@ def run_pipeline(mode: str, file_path: str, limit_companies: int = None):
         # 4. News Fetching & Saving
         from price_reversal_core.news_fetcher import save_news_summary
         news_path = save_news_summary(normalized_data, output_dir="files")
-        
+
         # 5. PDF Report Generation
         from price_reversal_core.pdf_report_generator import generate_pdf_report
+        from price_reversal_core.pdf_report_generator import extract_pdf_text # Import extract_pdf_text
         
         primer_path = "price_reversal_primer.pdf"
         prompts_path = "prompts/PRNSPrompts.txt"
+        
+        print(f"\nTickers data being passed to PDF report generator: {tickers_data}\n")
         
         # Generate PDF
         report_path = generate_pdf_report(
@@ -61,7 +68,25 @@ def run_pipeline(mode: str, file_path: str, limit_companies: int = None):
         )
             
         print(f"Pipeline completed successfully. Report generated at: {report_path}")
+
+        # 6. Calculate Metrics on the generated PDF content
+        from price_reversal_core.metrics_calculator import calculate_text_metrics
         
+        # Extract text from the generated PDF
+        pdf_content = extract_pdf_text(report_path)
+        
+        print("\nCalculating metrics on PDF report content...")
+        metrics = calculate_text_metrics(pdf_content, tickers_data)
+        
+        print("Metrics:")
+        for key, value in metrics.items():
+            print(f"  {key}: {value}")
+        
+        # 7. Store Metrics in Database
+        input_filename = os.path.basename(file_path)
+        output_filename = os.path.basename(report_path)
+        insert_metrics_record(input_filename, output_filename, metrics)
+
         return True # Indicate success
         
     except Exception as e:
@@ -69,6 +94,9 @@ def run_pipeline(mode: str, file_path: str, limit_companies: int = None):
         return False # Indicate failure
 
 if __name__ == "__main__":
+    # Initialize database at the start of the script
+    initialize_database()
+
     parser = argparse.ArgumentParser(description="Run the Price Reversal News Summary pipeline.")
     parser.add_argument("mode", type=str, help="The analysis mode (e.g., 'default').")
     parser.add_argument("file_path", type=str, nargs='?', default=None, help="The path to the Excel file. If not provided, the newest .xlsx in 'files/uploads' will be used.")
@@ -100,10 +128,22 @@ if __name__ == "__main__":
         os.makedirs(completed_dir, exist_ok=True)
         
         try:
-            shutil.move(target_file_path, completed_dir)
-            print(f"Successfully moved '{target_file_path}' to '{completed_dir}'")
+            original_filename = os.path.basename(target_file_path)
+            destination_path = os.path.join(completed_dir, original_filename)
+            
+            # If file already exists in completed, append timestamp
+            if os.path.exists(destination_path):
+                timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+                name, ext = os.path.splitext(original_filename)
+                new_filename = f"{name}_{timestamp}{ext}"
+                destination_path = os.path.join(completed_dir, new_filename)
+                print(f"File '{original_filename}' already exists in '{completed_dir}'. Renaming to '{new_filename}'.")
+
+            shutil.move(target_file_path, destination_path)
+            print(f"Successfully moved '{original_filename}' to '{destination_path}'")
         except Exception as e:
             print(f"Error moving file '{target_file_path}' to '{completed_dir}': {e}")
+
 
 
 

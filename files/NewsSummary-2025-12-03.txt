@@ -1,0 +1,39 @@
+News Summary generated on 2025-12-03
+==================================================
+
+
+## News for MSFT (Microsoft)
+- **AWS CEO Matt Garman Wants to Reassert Amazon’s Cloud Dominance in the AI Era** (Wired) - 2025-12-02
+  https://www.wired.com/story/amazon-aws-ceo-matt-garman-ai-agents/
+- **Microsoft’s latest Windows 11 update improves and breaks dark mode** (The Verge) - 2025-12-02
+  https://www.theverge.com/news/836199/microsoft-windows-11-file-explorer-white-screen-flash-bug
+- **How Microsoft’s developers are using AI** (The Verge) - 2025-11-27
+  https://www.theverge.com/tech/831379/microsoft-developer-ai-usage-stats-notepad
+- **Microsoft’s ugly sweaters return with Clippy, Xbox, and Zune brown options** (The Verge) - 2025-12-01
+  https://www.theverge.com/news/835130/microsoft-ugly-sweater-clippy-zune-brown-xbox
+- **ChatGPT and Copilot are being booted out of WhatsApp** (The Verge) - 2025-11-26
+  https://www.theverge.com/news/829808/chatgpt-copilot-ai-llm-leaving-whatsapp-meta
+
+## News for CSCO (Cisco Systems)
+- **Is Cisco Systems Stock Outperforming the Nasdaq?** (Barchart.com) - 2025-11-26
+  https://www.barchart.com/story/news/36321816/is-cisco-systems-stock-outperforming-the-nasdaq
+- **UBS Raises Cisco Systems (CSCO) Price Target After Strong Hyperscale Customer Growth** (Yahoo Entertainment) - 2025-11-29
+  https://finance.yahoo.com/news/ubs-raises-cisco-systems-csco-180908960.html
+- **Your critical infrastructure is running out of time** (Help Net Security) - 2025-11-27
+  https://www.helpnetsecurity.com/2025/11/27/cisco-legacy-system-vulnerabilities-report/
+- **Securing Agents & AI Supply Chain with Cisco AI Defense** (Cisco.com) - 2025-12-02
+  https://blogs.cisco.com/ai/securing-agents-ai-supply-chain-with-cisco-ai-defense
+- **Cisco XDR Agentic AI With Cisco’s Foundational AI Model** (Cisco.com) - 2025-12-02
+  https://blogs.cisco.com/security/cisco-xdr-agentic-ai-with-ciscos-foundational-ai-model
+
+## News for MCD (McDonald's)
+- **Laughs, apologies, a bagel order: The weirdly chill 911 call that ended Luigi Mangione's freedom** (Business Insider) - 2025-12-01
+  https://www.businessinsider.com/luigi-mangione-911-call-recording-evidentiary-hearing-ny-state-court-2025-12
+- **I tried the biggest burgers at 5 fast-food chains and ranked them from worst to best** (Business Insider) - 2025-12-01
+  https://www.businessinsider.com/best-biggest-fast-food-burgers-ranked
+- **It's never been easier to AI a Thanksgiving dinner table — just look at social media** (Business Insider) - 2025-11-27
+  https://www.businessinsider.com/ai-thanksgiving-dinner-photos-rfk-jr-alex-jones-google-gemini-2025-11
+- **Luigi Mangioni claimed he was a homeless man named 'Mark' in surreal, newly revealed bodycam footage of his arrest** (Business Insider) - 2025-12-02
+  https://www.businessinsider.com/luigi-mangione-bodycam-video-mcdonalds-arrest-homeless-mark-evidentiary-hearing-2025-12
+- **Luigi Mangione 911 Audio From McDonald's Bust Played in Court, Eyebrows Noted** (TMZ) - 2025-12-01
+  https://www.tmz.com/2025/12/01/luigi-mangione-911-audio-mcdonalds-arrest-court-eyebrows/

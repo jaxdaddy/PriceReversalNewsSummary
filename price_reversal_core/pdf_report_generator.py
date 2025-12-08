@@ -10,11 +10,55 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.units import inch
+from reportlab.pdfgen import canvas # Import canvas
 from typing import List, Dict
 
 # Load environment variables
 from dotenv import load_dotenv
 load_dotenv()
+
+def _footer_callback(canvas_obj, doc):
+    """
+    Draws the footer on each page.
+    """
+    canvas_obj.saveState()
+    # Footer content
+    advisory = "<i>This content was created with Artificial Intelligence</i>"
+    generated_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    timestamp = f"<i>Generated on: {generated_time}</i>"
+
+    # Define a style for the footer
+    styles = getSampleStyleSheet()
+    footer_style = ParagraphStyle(
+        'footer',
+        parent=styles['Normal'],
+        alignment=1, # TA_CENTER
+        fontSize=8,
+        leading=10,
+        textColor=colors.gray,
+    )
+
+    # Page number
+    page_num_text = f"Page {doc.page}"
+    canvas_obj.setFont('Helvetica', 8)
+    canvas_obj.setFillColor(colors.gray)
+    canvas_obj.drawString(inch, 0.75 * inch, page_num_text) # Left aligned page number
+
+    # Advisory text
+    p_advisory = Paragraph(advisory, footer_style)
+    # Calculate width of the advisory paragraph
+    text_width, text_height = p_advisory.wrapOn(canvas_obj, doc.width, doc.bottomMargin)
+    # Center the advisory
+    p_advisory.drawOn(canvas_obj, doc.leftMargin + (doc.width - text_width) / 2.0, 0.85 * inch)
+    
+    # Timestamp text
+    p_timestamp = Paragraph(timestamp, footer_style)
+    # Calculate width of the timestamp paragraph
+    text_width, text_height = p_timestamp.wrapOn(canvas_obj, doc.width, doc.bottomMargin)
+    # Center the timestamp
+    p_timestamp.drawOn(canvas_obj, doc.leftMargin + (doc.width - text_width) / 2.0, 0.75 * inch)
+    
+    canvas_obj.restoreState()
 
 def extract_pdf_text(pdf_path: str) -> str:
     try:
@@ -51,31 +95,26 @@ def markdown_to_paragraphs(markdown_text: str, styles: dict) -> list:
                 processed_table_data = []
                 # First, determine if there's a separator line and process header/body separately
                 header_row = []
-                separator_row = []
-                body_rows = []
+                separator_idx = -1
 
                 # Find separator line (e.g., |---|---|) 
-                separator_idx = -1
                 for i, t_line in enumerate(table_lines):
                     # Check for a line consisting primarily of hyphens and pipes
-                    if re.match(r'^\|[\s\- |:]*$', t_line.strip()):
+                    if re.match(r'^\|[\s\-\:|]*$', t_line.strip()):
                         separator_idx = i
                         break
                 
                 if separator_idx != -1:
+                    # Process header row
                     header_row_str = table_lines[0]
-                    body_lines_str = table_lines[separator_idx + 1:]
-                    
-                    # Process header
                     header_cells = [cell.strip() for cell in header_row_str.split('|') if cell.strip()]
-                    header_row = [Paragraph(f"<b>{cell}</b>", styles['Normal']) for cell in header_cells]
-                    processed_table_data.append(header_row)
+                    processed_table_data.append([Paragraph(f"<b>{cell}</b>", styles['Normal']) for cell in header_cells])
 
-                    # Process body rows
-                    for b_line_str in body_lines_str:
+                    # Process body rows (skip separator line)
+                    for b_line_str in table_lines[separator_idx + 1:]:
                         body_cells = [cell.strip() for cell in b_line_str.split('|') if cell.strip()]
                         processed_table_data.append([Paragraph(cell, styles['Normal']) for cell in body_cells])
-                else: # No explicit separator, treat all as body
+                else: # No explicit separator, treat all rows as body (no bold header)
                     for t_line in table_lines:
                         row_cells = [cell.strip() for cell in t_line.split('|')]
                         processed_table_data.append([Paragraph(cell, styles['Normal']) for cell in row_cells if cell])
@@ -103,7 +142,7 @@ def markdown_to_paragraphs(markdown_text: str, styles: dict) -> list:
                         ('GRID', (0,0), (-1,-1), 1, colors.black),
                         ('VALIGN', (0,0), (-1,-1), 'TOP'),
                         ('WORDWRAP', (0,0), (-1,-1), True), # Enable word wrapping
-                        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'), # Header text is bold
+                        ('FONTNAME', (0,0), (max_cols - 1,0), 'Helvetica-Bold'), # Header text is bold
                     ])
                     
                     t = Table(processed_table_data, colWidths=col_widths)
@@ -138,32 +177,23 @@ def markdown_to_paragraphs(markdown_text: str, styles: dict) -> list:
     # Process any remaining table lines if file ends with a table
     if in_table_block and table_lines:
         processed_table_data = []
-        # First, determine if there's a separator line and process header/body separately
         header_row = []
-        separator_row = []
-        body_rows = []
-
-        # Find separator line (e.g., |---|---|) 
         separator_idx = -1
+
         for i, t_line in enumerate(table_lines):
-            if re.match(r'^\|[\s\- |:]*$', t_line.strip()):
+            if re.match(r'^\|[\s\-\:|]*$', t_line.strip()):
                 separator_idx = i
                 break
         
         if separator_idx != -1:
             header_row_str = table_lines[0]
-            body_lines_str = table_lines[separator_idx + 1:]
-            
-            # Process header
             header_cells = [cell.strip() for cell in header_row_str.split('|') if cell.strip()]
-            header_row = [Paragraph(f"<b>{cell}</b>", styles['Normal']) for cell in header_cells]
-            processed_table_data.append(header_row)
+            processed_table_data.append([Paragraph(f"<b>{cell}</b>", styles['Normal']) for cell in header_cells])
 
-            # Process body rows
-            for b_line_str in body_lines_str:
+            for b_line_str in table_lines[separator_idx + 1:]:
                 body_cells = [cell.strip() for cell in b_line_str.split('|') if cell.strip()]
                 processed_table_data.append([Paragraph(cell, styles['Normal']) for cell in body_cells])
-        else: # No explicit separator, treat all as body
+        else:
             for t_line in table_lines:
                 row_cells = [cell.strip() for cell in t_line.split('|')]
                 processed_table_data.append([Paragraph(cell, styles['Normal']) for cell in row_cells if cell])
@@ -188,7 +218,7 @@ def markdown_to_paragraphs(markdown_text: str, styles: dict) -> list:
                 ('GRID', (0,0), (-1,-1), 1, colors.black),
                 ('VALIGN', (0,0), (-1,-1), 'TOP'),
                 ('WORDWRAP', (0,0), (-1,-1), True), # Enable word wrapping
-                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'), # Header text is bold
+                ('FONTNAME', (0,0), (max_cols - 1,0), 'Helvetica-Bold'), # Header text is bold
             ])
                 
             t = Table(processed_table_data, colWidths=col_widths)
@@ -266,7 +296,10 @@ def generate_pdf_report(
     output_filename = f"PRNS_Summary-{current_date}.pdf"
     output_path = os.path.join(output_dir, output_filename)
     
-    doc = SimpleDocTemplate(output_path, pagesize=letter)
+    doc = SimpleDocTemplate(output_path, pagesize=letter,
+                            rightMargin=inch/2, leftMargin=inch/2,
+                            topMargin=inch/2, bottomMargin=inch)
+    
     styles = getSampleStyleSheet()
     
     # Add custom styles
@@ -290,7 +323,7 @@ def generate_pdf_report(
     # Create table data
     if subset_data:
         headers = list(subset_data[0].keys())
-        key_columns = ['Symbol', 'Company Name', 'Reversal Date', 'Reversal Price', 'HR1 Value', 'Last Close Price']
+        key_columns = ['Symbol', 'Company Name', 'Reversal Date', 'Direction', 'Reversal Price', 'HR1 Value', 'Last Close Price']
         table_data = [key_columns]
         
         for item in subset_data:
@@ -330,5 +363,5 @@ def generate_pdf_report(
         story.extend(response_paragraphs)
         story.append(Spacer(1, 12))
         
-    doc.build(story)
+    doc.build(story, onFirstPage=_footer_callback, onLaterPages=_footer_callback)
     return output_path
