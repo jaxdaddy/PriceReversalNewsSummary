@@ -4,3 +4,8 @@ __pycache__/
 .DS_Store
 files/uploads/
 files/reports/
+credentials.json
+token.json
+gemini_response.txt
+files/NewsSummary-*.txt
+price_reversal_core/pipeline_metrics.db

@@ -1,32 +1,15 @@
-import google.generativeai as genai
+# This file is currently not actively used in the main pipeline for Gemini report generation.
+# The primary report generation logic, including Gemini API calls, is located in
+# price_reversal_core/pdf_report_generator.py.
+
+# This file is kept as a placeholder or for potential future use.
+
 import os
+from typing import List, Dict
 
 def generate_report(news_summary: str, primer_content: str, base_prompt: str) -> str:
     """
-    Generates a report using Gemini based on news summary and prompts.
+    Placeholder function for report generation.
+    Returns a string indicating its inactive status.
     """
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        return "Error: GEMINI_API_KEY not found."
-
-    genai.configure(api_key=api_key)
-    model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-pro")
-    model = genai.GenerativeModel(model_name)
-
-    full_prompt = f"""
-    {base_prompt}
-    
-    ---
-    CONTEXT DOCUMENT (Price Reversal Primer):
-    {primer_content}
-    
-    ---
-    NEWS SUMMARY:
-    {news_summary}
-    """
-    
-    try:
-        response = model.generate_content(full_prompt)
-        return response.text
-    except Exception as e:
-        return f"Error generating report: {str(e)}"
+    return "This report generation function is not currently active in the main pipeline. Please refer to pdf_report_generator.py for active LLM-based report generation."

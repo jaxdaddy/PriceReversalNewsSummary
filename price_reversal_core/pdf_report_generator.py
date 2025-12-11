@@ -10,13 +10,15 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.units import inch
-from reportlab.pdfgen import canvas # Import canvas
 from typing import List, Dict
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from google.api_core.exceptions import ResourceExhausted, InternalServerError, ServiceUnavailable
 
 # Load environment variables
 from dotenv import load_dotenv
 load_dotenv()
 
+# --- Helper Functions ---
 def _footer_callback(canvas_obj, doc):
     """
     Draws the footer on each page.
@@ -228,6 +230,16 @@ def markdown_to_paragraphs(markdown_text: str, styles: dict) -> list:
             
     return story
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=2, min=5, max=60),
+    retry=retry_if_exception_type((ResourceExhausted, InternalServerError, ServiceUnavailable)),
+    reraise=True
+)
+def _generate_response_with_retry(model, full_prompt: str) -> str:
+    """Internal function to call the Gemini API for report generation with retry logic."""
+    return model.generate_content(full_prompt).text
+
 def generate_pdf_report(
     subset_data: List[Dict],
     news_summary_path: str,
@@ -236,80 +248,56 @@ def generate_pdf_report(
     output_dir: str = "files"
 ) -> str:
     
-    # 1. Load Context
     with open(news_summary_path, "r") as f:
         news_summary = f.read()
-        
     primer_text = extract_pdf_text(primer_pdf_path)
-    
     with open(prompts_path, "r") as f:
         prompts_content = f.read()
     
-    # Parse prompts (assuming they are separated by blank lines or numbered)
-    # Simple parsing: split by double newlines and filter
     raw_prompts = [p.strip() for p in prompts_content.split('\n\n') if p.strip()]
     
-    # 2. Configure Gemini
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        return "Error: GEMINI_API_KEY not found."
+        print("Error: GEMINI_API_KEY not found.")
+        return "Error_GEMINI_API_KEY_not_found.pdf"
     
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('models/gemini-2.0-flash') # Or config model
+    model = genai.GenerativeModel('models/gemini-pro-latest')
     
-    # 3. Generate Responses
     responses = []
-    
     subset_str = json.dumps(subset_data, default=str, indent=2)
     
     for prompt_text in raw_prompts:
         full_prompt = f"""
         You are a financial analyst.
-        
-        CONTEXT:
-        {primer_text[:10000]} # Truncate if too long, or use file API
-        
-        NEWS SUMMARY:
-        {news_summary[:10000]}
-        
-        DATA:
-        {subset_str}
-        
-        TASK:
-        {prompt_text}
+        CONTEXT: {primer_text[:10000]}
+        NEWS SUMMARY: {news_summary[:10000]}
+        DATA: {subset_str}
+        TASK: {prompt_text}
         """
-        
         try:
-            response = model.generate_content(full_prompt)
-            responses.append({
-                "prompt": prompt_text,
-                "response": response.text
-            })
+            response_text = _generate_response_with_retry(model, full_prompt)
+            responses.append({"prompt": prompt_text, "response": response_text})
+        except (ResourceExhausted, InternalServerError, ServiceUnavailable) as e:
+            print(f"LLM call failed after retries for prompt '{prompt_text[:50]}...': {e}")
+            error_message = "Content generation failed due to API errors after multiple retries."
+            responses.append({"prompt": prompt_text, "response": error_message})
         except Exception as e:
-            responses.append({
-                "prompt": prompt_text,
-                "response": f"Error generating response: {str(e)}"
-            })
+            print(f"An unexpected error occurred for prompt '{prompt_text[:50]}...': {e}")
+            error_message = f"An unexpected error occurred: {str(e)}"
+            responses.append({"prompt": prompt_text, "response": error_message})
             
-    # 4. Create PDF
+    # --- PDF Creation Logic ---
     current_date = datetime.datetime.now().strftime('%Y-%m-%d')
     output_filename = f"PRNS_Summary-{current_date}.pdf"
     output_path = os.path.join(output_dir, output_filename)
     
-    doc = SimpleDocTemplate(output_path, pagesize=letter,
-                            rightMargin=inch/2, leftMargin=inch/2,
-                            topMargin=inch/2, bottomMargin=inch)
-    
+    doc = SimpleDocTemplate(output_path, pagesize=letter, topMargin=inch/2, bottomMargin=inch)
     styles = getSampleStyleSheet()
-    
-    # Add custom styles
     styles.add(ParagraphStyle(name='CustomH1', fontSize=18, leading=22, spaceAfter=12))
     styles.add(ParagraphStyle(name='CustomH2', fontSize=16, leading=20, spaceAfter=10))
     styles.add(ParagraphStyle(name='CustomH3', fontSize=14, leading=18, spaceAfter=8))
-    styles.add(ParagraphStyle(name='Preformatted', fontName='Courier', fontSize=10, leading=12,
-                                     spaceBefore=6, spaceAfter=6, borderWidth=0.5, borderColor=colors.black,
-                                     backColor=colors.lightgrey))
-
+    
     story = []
     
     # Title
@@ -322,7 +310,6 @@ def generate_pdf_report(
     
     # Create table data
     if subset_data:
-        headers = list(subset_data[0].keys())
         key_columns = ['Symbol', 'Company Name', 'Reversal Date', 'Direction', 'Reversal Price', 'HR1 Value', 'Last Close Price']
         table_data = [key_columns]
         
@@ -330,7 +317,17 @@ def generate_pdf_report(
             row = [str(item.get(col, '')) for col in key_columns]
             table_data.append(row)
             
-        t = Table(table_data)
+        # Ensure all rows have the same number of columns for ReportLab Table
+        max_cols = max(len(row) for row in table_data) if table_data else 0
+        max_cols = max(1, max_cols) # Ensure max_cols is at least 1
+        processed_table_data = [row + [Paragraph('', styles['Normal'])] * (max_cols - len(row)) for row in table_data]
+
+        page_width = letter[0]
+        left_right_margin = 0.5 * inch # Assuming 0.5 inch margin on each side
+        available_width = page_width - (2 * left_right_margin)
+        col_widths = [available_width / max_cols] * max_cols if max_cols > 0 else [None]
+            
+        t = Table(processed_table_data, colWidths=col_widths)
         t.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
