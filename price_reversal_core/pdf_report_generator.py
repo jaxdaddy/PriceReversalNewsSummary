@@ -267,6 +267,14 @@ def generate_pdf_report(
     responses = []
     subset_str = json.dumps(subset_data, default=str, indent=2)
     
+    # Define styles locally for use in this function
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name='CustomH1', parent=styles['Normal'], fontSize=18, leading=22, spaceAfter=12))
+    styles.add(ParagraphStyle(name='CustomH2', parent=styles['Normal'], fontSize=16, leading=20, spaceAfter=10))
+    styles.add(ParagraphStyle(name='CustomH3', parent=styles['Normal'], fontSize=14, leading=18, spaceAfter=8))
+    styles.add(ParagraphStyle(name='TableCell', parent=styles['Normal'], fontSize=8, leading=10)) # Smaller font for table cells
+
+
     for prompt_text in raw_prompts:
         full_prompt = f"""
         You are a financial analyst.
@@ -293,10 +301,6 @@ def generate_pdf_report(
     output_path = os.path.join(output_dir, output_filename)
     
     doc = SimpleDocTemplate(output_path, pagesize=letter, topMargin=inch/2, bottomMargin=inch)
-    styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name='CustomH1', fontSize=18, leading=22, spaceAfter=12))
-    styles.add(ParagraphStyle(name='CustomH2', fontSize=16, leading=20, spaceAfter=10))
-    styles.add(ParagraphStyle(name='CustomH3', fontSize=14, leading=18, spaceAfter=8))
     
     story = []
     
@@ -311,16 +315,27 @@ def generate_pdf_report(
     # Create table data
     if subset_data:
         key_columns = ['Symbol', 'Company Name', 'Reversal Date', 'Direction', 'Reversal Price', 'HR1 Value', 'Last Close Price']
-        table_data = [key_columns]
+        table_data = [] # Initialize with an empty list
+
+        # Headers also need the smaller cell style, but bold
+        header_row_with_style = [Paragraph(f"<b>{col}</b>", styles['TableCell']) for col in key_columns]
+        table_data.append(header_row_with_style)
         
         for item in subset_data:
-            row = [str(item.get(col, '')) for col in key_columns]
+            row = []
+            for col in key_columns:
+                value = item.get(col, '')
+                if col == 'Reversal Date' and isinstance(value, pd.Timestamp):
+                    formatted_value = value.strftime('%Y-%m-%d')
+                else:
+                    formatted_value = str(value)
+                row.append(Paragraph(formatted_value, styles['TableCell'])) # Apply smaller cell style
             table_data.append(row)
             
         # Ensure all rows have the same number of columns for ReportLab Table
         max_cols = max(len(row) for row in table_data) if table_data else 0
         max_cols = max(1, max_cols) # Ensure max_cols is at least 1
-        processed_table_data = [row + [Paragraph('', styles['Normal'])] * (max_cols - len(row)) for row in table_data]
+        processed_table_data = [row + [Paragraph('', styles['TableCell'])] * (max_cols - len(row)) for row in table_data]
 
         page_width = letter[0]
         left_right_margin = 0.5 * inch # Assuming 0.5 inch margin on each side
@@ -332,10 +347,12 @@ def generate_pdf_report(
             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'), # Keep header bold
             ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
             ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'), # Vertically align middle
+            ('FONTSIZE', (0,1), (-1,-1), 8) # Set font size for data cells
         ]))
         story.append(t)
     else:

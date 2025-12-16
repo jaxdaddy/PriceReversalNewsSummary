@@ -1,11 +1,12 @@
 import argparse
 import os
-import uuid
+# import uuid # Removed as runner.py will manage run_id
 import sys
 import glob
 import shutil
-from datetime import datetime # Import datetime
+from datetime import datetime
 from dotenv import load_dotenv
+import logging
 
 # Load environment variables
 load_dotenv()
@@ -16,17 +17,27 @@ sys.path.append(os.getcwd())
 # Import database manager
 from price_reversal_core.database_manager import initialize_database, insert_metrics_record
 
-def run_pipeline(mode: str, file_path: str, limit_companies: int = None):
+logger = logging.getLogger(__name__)
+
+def execute_pipeline(file_path: str, mode: str = 'default', limit_companies: int = None) -> str or None:
     """
-    Runs the price reversal analysis pipeline.
+    Executes the price reversal analysis pipeline for a given Excel file.
+
+    Args:
+        file_path (str): The path to the Excel file containing stock data.
+        mode (str): The analysis mode (e.g., 'default'). Defaults to 'default'.
+        limit_companies (int, optional): Limits the number of companies to process. Defaults to None.
+
+    Returns:
+        str: The full path to the generated PDF report if successful, otherwise None.
     """
-    run_id = str(uuid.uuid4())
+    # run_id = str(uuid.uuid4()) # Managed by runner.py if needed
     
     try:
         # Check for debug mode from .env
         debug_mode_env = os.getenv("DEBUG_MODE", "False").lower() == "true"
         if debug_mode_env:
-            print("Debug mode active. Limiting companies to 2.")
+            logger.info("Debug mode active. Limiting companies to 2.")
             limit_companies = 2 # Override if debug mode is active
             
         # 1. Ingestion
@@ -50,12 +61,12 @@ def run_pipeline(mode: str, file_path: str, limit_companies: int = None):
 
         # 5. PDF Report Generation
         from price_reversal_core.pdf_report_generator import generate_pdf_report
-        from price_reversal_core.pdf_report_generator import extract_pdf_text # Import extract_pdf_text
+        from price_reversal_core.pdf_report_generator import extract_pdf_text
         
         primer_path = "price_reversal_primer.pdf"
         prompts_path = "prompts/PRNSPrompts.txt"
         
-        print(f"\nTickers data being passed to PDF report generator: {tickers_data}\n")
+        logger.info(f"Tickers data being passed to PDF report generator: {tickers_data}")
         
         # Generate PDF
         report_path = generate_pdf_report(
@@ -66,7 +77,7 @@ def run_pipeline(mode: str, file_path: str, limit_companies: int = None):
             output_dir="files/reports"
         )
             
-        print(f"Pipeline completed successfully. Report generated at: {report_path}")
+        logger.info(f"Pipeline completed successfully. Report generated at: {report_path}")
 
         # 6. Calculate Metrics on the generated PDF content
         from price_reversal_core.metrics_calculator import calculate_text_metrics
@@ -74,23 +85,23 @@ def run_pipeline(mode: str, file_path: str, limit_companies: int = None):
         # Extract text from the generated PDF
         pdf_content = extract_pdf_text(report_path)
         
-        print("\nCalculating metrics on PDF report content...")
+        logger.info("Calculating metrics on PDF report content...")
         metrics = calculate_text_metrics(pdf_content, tickers_data)
         
-        print("Metrics:")
+        logger.info("Metrics:")
         for key, value in metrics.items():
-            print(f"  {key}: {value}")
+            logger.info(f"  {key}: {value}")
         
         # 7. Store Metrics in Database
         input_filename = os.path.basename(file_path)
         output_filename = os.path.basename(report_path)
         insert_metrics_record(input_filename, output_filename, metrics)
 
-        return True # Indicate success
+        return report_path # Return the path to the generated PDF
         
     except Exception as e:
-        print(f"Pipeline failed: {e}")
-        return False # Indicate failure
+        logger.error(f"Pipeline failed for file {file_path}: {e}", exc_info=True)
+        return None # Indicate failure
 
 if __name__ == "__main__":
     # Initialize database at the start of the script
@@ -106,23 +117,25 @@ if __name__ == "__main__":
     target_file_path = args.file_path
     
     if target_file_path is None:
-        uploads_dir = "files/uploads"
+        uploads_dir = os.path.join(os.getcwd(), "files", "uploads")
         xlsx_files = glob.glob(os.path.join(uploads_dir, "*.xlsx"))
         
         if not xlsx_files:
-            print(f"Error: No .xlsx files found in '{uploads_dir}'. Please provide a file path or ensure files exist.")
+            logger.error(f"Error: No .xlsx files found in '{uploads_dir}'. Please provide a file path or ensure files exist.")
             sys.exit(1)
             
         # Sort by modification time (newest first)
         target_file_path = max(xlsx_files, key=os.path.getmtime)
-        print(f"No file_path provided. Automatically selected newest file: '{target_file_path}'")
-        
-    # Run the pipeline
-    success = run_pipeline(args.mode, target_file_path, limit_companies=args.limit_companies)
+        logger.info(f"No file_path provided. Automatically selected newest file: '{target_file_path}'")
     
-    if success:
-        # Move processed file to 'completed' subdirectory
-        uploads_dir = "files/uploads"
+    # Run the pipeline
+    pdf_report_path = execute_pipeline(target_file_path, args.mode, limit_companies=args.limit_companies)
+    
+    if pdf_report_path:
+        logger.info(f"Pipeline executed successfully. PDF report: {pdf_report_path}")
+        
+        # Move processed file to 'completed' subdirectory (for standalone testing)
+        uploads_dir = os.path.join(os.getcwd(), "files", "uploads")
         completed_dir = os.path.join(uploads_dir, "completed")
         os.makedirs(completed_dir, exist_ok=True)
         
@@ -136,13 +149,13 @@ if __name__ == "__main__":
                 name, ext = os.path.splitext(original_filename)
                 new_filename = f"{name}_{timestamp}{ext}"
                 destination_path = os.path.join(completed_dir, new_filename)
-                print(f"File '{original_filename}' already exists in '{completed_dir}'. Renaming to '{new_filename}'.")
+                logger.info(f"File '{original_filename}' already exists in '{completed_dir}'. Renaming to '{new_filename}'.")
 
             shutil.move(target_file_path, destination_path)
-            print(f"Successfully moved '{original_filename}' to '{destination_path}'")
+            logger.info(f"Successfully moved '{original_filename}' to '{destination_path}'")
         except Exception as e:
-            print(f"Error moving file '{target_file_path}' to '{completed_dir}': {e}")
-
-
-
-
+            logger.error(f"Error moving file '{target_file_path}' to '{completed_dir}': {e}", exc_info=True)
+        
+    else:
+        logger.error("Pipeline execution failed.")
+        sys.exit(1)

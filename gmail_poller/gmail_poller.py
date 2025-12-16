@@ -11,16 +11,17 @@ from googleapiclient.errors import HttpError
 
 from .config import DOWNLOAD_DIR, POLL_SLEEP_MINUTES, MAX_RETRIES
 from .attachment_utils import save_attachment
-from .run_pipeline_wrapper import run_pipeline
+# Removed import of run_pipeline as it will be called by runner.py
 
 logger = logging.getLogger(__name__)
 
 # Define the scopes for the Gmail API
-SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
+SCOPES = ["https://www.googleapis.com/auth/gmail.modify", "https://www.googleapis.com/auth/gmail.send"]
 
-def get_gmail_service():
+def get_gmail_service_poller():
     """
     Authenticates with the Gmail API using OAuth 2.0 and returns a service object.
+    This function will ensure the token.json has both modify and send scopes.
     """
     creds = None
     if os.path.exists("token.json"):
@@ -28,38 +29,41 @@ def get_gmail_service():
 
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            logger.info("Credentials expired. Refreshing...")
+            logger.info("Gmail poller credentials expired. Refreshing...")
             creds.refresh(Request())
         else:
             if not os.path.exists("credentials.json"):
-                logger.error("credentials.json not found. Please run oauth_test.py first.")
+                logger.error("credentials.json not found. Please ensure it's in the project root.")
                 return None
-            logger.info("No valid credentials found. Starting authorization flow...")
+            logger.info("No valid Gmail poller credentials found. Starting authorization flow...")
             flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
             creds = flow.run_local_server(port=0)
         
         with open("token.json", "w") as token:
             token.write(creds.to_json())
-            logger.info("Credentials saved to token.json")
+            logger.info("Gmail poller credentials saved to token.json")
     
     try:
         service = build("gmail", "v1", credentials=creds)
-        logger.info("Gmail API service built successfully.")
+        logger.info("Gmail API service for polling built successfully.")
         return service
     except HttpError as error:
-        logger.error(f"An error occurred building the Gmail service: {error}")
+        logger.error(f"An error occurred building the Gmail service for polling: {error}")
         return None
 
-def poll_for_DOW30_and_process():
+def run_poller() -> str or None:
     """
     Polls Gmail for unread emails with "DOW30" in the subject using the Gmail API,
-    downloads attached .xlsx files, and triggers the processing pipeline.
+    downloads attached .xlsx files, marks the email as read, and returns the path to the downloaded file.
+
+    Returns:
+        str: The full path to the downloaded .xlsx file if successful, otherwise None.
     """
     for attempt in range(1, MAX_RETRIES + 1):
         logger.info(f"Polling attempt {attempt}/{MAX_RETRIES}...")
         service = None
         try:
-            service = get_gmail_service()
+            service = get_gmail_service_poller()
             if not service:
                 logger.warning(f"Could not get Gmail service on attempt {attempt}. Retrying...")
                 time.sleep(POLL_SLEEP_MINUTES * 60)
@@ -72,10 +76,11 @@ def poll_for_DOW30_and_process():
 
             if not messages:
                 logger.info("No matching unread emails found.")
-                time.sleep(POLL_SLEEP_MINUTES * 60)
+                # Only sleep if we're going to retry
+                if attempt < MAX_RETRIES:
+                    time.sleep(POLL_SLEEP_MINUTES * 60)
                 continue
 
-            found_and_processed = False
             for message_info in messages:
                 msg_id = message_info["id"]
                 msg = service.users().messages().get(userId="me", id=msg_id, format="raw").execute()
@@ -104,31 +109,26 @@ def poll_for_DOW30_and_process():
                         userId="me", id=msg_id, body={"removeLabelIds": ["UNREAD"]}
                     ).execute()
                     
-                    # Now that all Gmail operations are done, run the pipeline
-                    logger.info(f"Attempting to run pipeline for: {saved_filepath}")
-                    if run_pipeline(saved_filepath):
-                        found_and_processed = True
-                        break  # Exit after processing one email successfully
-                    else:
-                        logger.error(f"Pipeline failed for {saved_filepath}. The email was already marked as read.")
-                        # Decide on error handling: maybe re-mark as unread? For now, just log and stop.
-                        break
-            
-            if found_and_processed:
-                logger.info("Successfully found, downloaded, and processed one email.")
-                return
+                    logger.info(f"Successfully found, downloaded, and marked email as read: {saved_filepath}")
+                    return saved_filepath # Return the path to the downloaded file
 
         except HttpError as error:
             logger.error(f"An HttpError occurred during polling attempt {attempt}: {error}")
         except Exception as e:
             logger.error(f"An unexpected error occurred during polling attempt {attempt}: {e}", exc_info=True)
         
+        # Only sleep if an error occurred or no email was found AND we are retrying
         if attempt < MAX_RETRIES:
-            logger.info(f"No matching email found or processed on attempt {attempt}. Sleeping for {POLL_SLEEP_MINUTES} minutes before retrying...")
+            logger.info(f"Sleeping for {POLL_SLEEP_MINUTES} minutes before retrying...")
             time.sleep(POLL_SLEEP_MINUTES * 60)
 
-    logger.warning(f"No DOW30_ email with .xlsx attachment found after {MAX_RETRIES} attempts.")
+    logger.warning(f"No DOW30 email with .xlsx attachment found after {MAX_RETRIES} attempts.")
+    return None # No file processed after all attempts
 
 if __name__ == "__main__":
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
-    poll_for_DOW30_and_process()
+    downloaded_file = run_poller()
+    if downloaded_file:
+        logger.info(f"Poller test successful: Downloaded {downloaded_file}")
+    else:
+        logger.error("Poller test failed or no new file found.")
