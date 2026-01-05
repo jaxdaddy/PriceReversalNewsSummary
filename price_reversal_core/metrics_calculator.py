@@ -18,6 +18,10 @@ def _download_nltk_data():
         nltk.data.find('tokenizers/punkt')
     except Exception: # Use generic Exception to avoid issues with specific NLTK DownloadError path
         nltk.download('punkt')
+    try:
+        nltk.data.find('tokenizers/punkt_tab')
+    except Exception: # Use generic Exception to avoid issues with specific NLTK DownloadError path
+        nltk.download('punkt_tab')
 
 # Call the function once when the module is loaded
 _download_nltk_data()

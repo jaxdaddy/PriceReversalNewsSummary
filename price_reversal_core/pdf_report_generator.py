@@ -248,10 +248,10 @@ def generate_pdf_report(
     output_dir: str = "files"
 ) -> str:
     
-    with open(news_summary_path, "r") as f:
+    with open(news_summary_path, "r", encoding="utf-8", errors="replace") as f:
         news_summary = f.read()
     primer_text = extract_pdf_text(primer_pdf_path)
-    with open(prompts_path, "r") as f:
+    with open(prompts_path, "r", encoding="utf-8", errors="replace") as f:
         prompts_content = f.read()
     
     raw_prompts = [p.strip() for p in prompts_content.split('\n\n') if p.strip()]

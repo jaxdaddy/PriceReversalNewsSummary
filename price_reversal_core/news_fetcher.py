@@ -74,7 +74,7 @@ def save_news_summary(companies: List[Dict], output_dir: str = "files") -> str:
     os.makedirs(output_dir, exist_ok=True)
     file_path = os.path.join(output_dir, filename)
     
-    with open(file_path, "w") as f:
+    with open(file_path, "w", encoding="utf-8") as f:
         f.write(summary_content)
         
     return file_path

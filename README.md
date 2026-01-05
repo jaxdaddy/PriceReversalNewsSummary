@@ -57,22 +57,22 @@ Create a `.env` file in the project root. You can copy the examples as a startin
 -   Set `DEBUG_MODE=False` for full runs or `True` to process only 2 companies.
 
 **For the Gmail Poller & Email Sender:**
--   Add the following variables from `.env.example_gmail_poller` to your `.env` file:
+-   Add the following variables from `.env.example_gmail_poller` to your `.env` file and configure them:
+    -   `DOWNLOAD_DIR`: The absolute path where email attachments will be saved.
+        -   **On Windows**, use double backslashes (e.g., `C:\\Users\\YourUser\\path\\to\\files\\uploads`).
+        -   **On macOS/Linux**, use forward slashes (e.g., `/Users/YourUser/path/to/files/uploads`).
+    -   `POLL_SLEEP_MINUTES`: Time in minutes to wait between polling attempts.
+    -   `MAX_RETRIES`: Number of times to retry polling if no email is found.
+    -   `PRNS_EMAIL_RECIPIENTS`: A comma-separated list of recipient email addresses.
     ```
-    # Directory where attachments from Gmail will be saved.
-    DOWNLOAD_DIR=/path/to/PriceReversalNewsSummary/files/uploads
-
-    # Time in minutes to wait between polling attempts.
+    # Example for .env
+    DOWNLOAD_DIR=C:\\Users\\YourUser\\PriceReversalNewsSummary\\files\\uploads
     POLL_SLEEP_MINUTES=10
-
-    # Number of times to retry polling if no email is found.
     MAX_RETRIES=3
-
-    # Comma-separated list of recipient email addresses for PRNS reports.
-    # Example: recipient1@example.com,recipient2@example.com
-    PRNS_EMAIL_RECIPIENTS=
+    PRNS_EMAIL_RECIPIENTS=recipient1@example.com,recipient2@example.com
     ```
-    **Note**: Ensure `DOWNLOAD_DIR` is set to the absolute path of the `files/uploads` directory.
+    **Note**: The rest of the documentation will assume a macOS/Linux path structure for brevity. Please adjust paths accordingly for your operating system.
+
 
 #### 4. Configure Gmail API Access (OAuth 2.0)
 Both the Gmail Poller and the Email Sender use OAuth 2.0 for secure authentication.
@@ -147,4 +147,91 @@ To run `runner.py` every weekday at 9:00 AM (adjust path as needed):
 ```
 This example assumes `/usr/bin/python3` is your Python 3 interpreter and logs all output to `runner.log`.
 
+#### Example for Windows Task Scheduler
+On Windows, you can use the Task Scheduler to run the script on a schedule.
+
+1.  **Open Task Scheduler**: Press `Win + R`, type `taskschd.msc`, and press Enter.
+2.  **Create a New Task**: In the "Actions" pane, click "Create Task...".
+3.  **General Tab**: Give the task a name (e.g., "Run PRNS") and description.
+4.  **Triggers Tab**:
+    -   Click "New..." to add a trigger.
+    -   Configure the schedule (e.g., "Daily" or "Weekly" at a specific time).
+5.  **Actions Tab**:
+    -   Click "New..." to create an action.
+    -   **Action**: Select "Start a program".
+    -   **Program/script**: Enter the full path to your Python interpreter (e.g., `C:\Python39\python.exe`).
+    -   **Add arguments (optional)**: Enter `runner.py`.
+    -   **Start in (optional)**: Enter the full path to the project directory (e.g., `C:\Users\YourUser\PriceReversalNewsSummary`). This is important so the script can find the `.env` file and other resources.
+6.  **Conditions/Settings Tabs**: Review and adjust power settings or other conditions as needed.
+7.  **Save**: Click "OK" to save the task.
+
 **Important**: Ensure the user account running the cron/launchd job has the necessary permissions to read/write files and access the internet.
+---
+
+## Docker Usage
+
+This application can be containerized using Docker, which simplifies dependency management and ensures a consistent runtime environment.
+
+### Prerequisites
+-   [Docker](https://www.docker.com/get-started) installed on your machine.
+
+### 1. First-Time Authorization (One-Time Step)
+The Google API authentication requires an interactive, browser-based flow. This cannot be done inside the Docker container directly. You must perform this step once on your host machine.
+
+1.  Complete the setup steps in the "Setup & Installation" section on your local machine (install dependencies, configure `.env`, and download `credentials.json`).
+2.  Run the authorization flow:
+    ```bash
+    python3 runner.py
+    ```
+3.  This will open a browser, ask for authentication, and create a `token.json` file in your project root. **This file is essential for the Docker container.**
+
+### 2. Configure for Docker
+Before building the image, ensure your `.env` file is configured for the container's environment. The key change is the `DOWNLOAD_DIR`:
+
+```
+# .env file for Docker
+DOWNLOAD_DIR=/app/files/uploads
+GEMINI_API_KEY=your_gemini_key
+NEWSAPI_KEY=your_newsapi_key
+PRNS_EMAIL_RECIPIENTS=your_email@example.com
+# ... other variables
+```
+
+### 3. Build the Docker Image
+From the project root directory, run the following command:
+
+```bash
+docker build -t prns-app .
+```
+
+### 4. Run the Docker Container
+To run the application, you need to mount the Google API credentials and provide the environment variables.
+
+-   **`--env-file ./.env`**: Passes all variables from your `.env` file to the container.
+-   **`-v ./credentials.json:/app/credentials.json:ro`**: Mounts your `credentials.json` file in read-only mode.
+-   **`-v ./token.json:/app/token.json:ro`**: Mounts the `token.json` you generated, giving the container authentication.
+
+Run the container with the following command:
+
+```bash
+docker run --rm --name prns-runner --env-file ./.env -v ./credentials.json:/app/credentials.json:ro -v ./token.json:/app/token.json:ro prns-app
+```
+
+When the container runs, it will execute `python runner.py` and begin the workflow. Any generated reports or downloaded files will be stored *inside the container*. To access them, you can use `docker cp` or mount additional volumes for the `files/reports` and `files/uploads` directories.
+
+**Example with output volumes:**
+
+```bash
+# Create local directories to store outputs
+mkdir -p ./files/reports ./files/uploads
+
+# Run with volumes for reports and uploads
+docker run --rm --name prns-runner \
+  --env-file ./.env \
+  -v ./credentials.json:/app/credentials.json:ro \
+  -v ./token.json:/app/token.json:ro \
+  -v ./files/reports:/app/files/reports \
+  -v ./files/uploads:/app/files/uploads \
+  prns-app
+```
+
